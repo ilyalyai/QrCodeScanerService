@@ -67,8 +67,8 @@ private static class QrCodeExtactor
             { new StreamContent(fs), "document", "document.pdf" },
             { new StringContent(pageNumer.ToString()), "page_number" }
         };
-
-        HttpRequestMessage message = new(HttpMethod.Post, "http://host.docker.internal:8002/convert-to-jpeg")
+        string url = Service.GetRegistryValue<string>(@"Server\QrCodeServiceApi\ApiImageFromDocumentUrl", User.System, @"http://192.168.201.99:8002/convert-to-jpeg");
+        HttpRequestMessage message = new(HttpMethod.Post, url)
         {
             Content = form
         };
