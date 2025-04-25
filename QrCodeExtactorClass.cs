@@ -23,7 +23,7 @@ public static byte[] AddQrCode(string qrText, string pathToFile = "", int damage
 
 public static string ExtractQrCode(string filePath, int pageNum)
 {
-    if (string.IsNullOrEmpty(filePath) || pageNum < 0)
+    if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath) || pageNum < 0)
         return null;
 
     return QrCodeExtactor.GetTextFromDocument(filePath, pageNum);
@@ -34,8 +34,21 @@ private static class QrCodeExtactor
     private static readonly HttpClient _client = new();
 
     public static string GetTextFromDocument(string filePath, int pageNum)
-    {
-        var imageBytes = ConvertToImage(filePath, pageNum);
+    {      
+        byte[] imageBytes = null;
+        if(filePath.ToLower().EndsWith(".pdf"))
+            imageBytes = ConvertToImage(filePath, pageNum);
+        else
+        {
+            Image img = Image.FromFile(filePath);
+            if(img == null)
+                return null;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                img.Save(ms, img.RawFormat);
+                imageBytes =  ms.ToArray();
+            }
+        }
         return GetTextFromQrCode(imageBytes);
     }
 
