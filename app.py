@@ -29,6 +29,7 @@ def scan_for_qr_code():
 			content_type='text/plain'
 		)
 	
+	#Сначала поищем код на всём изображении (мало ли оно повёрнуто или код фиг пойми где)
 	try:
 		qcd = cv2.QRCodeDetector()
 		retval, decoded_info, points, straight_qrcode = qcd.detectAndDecodeMulti(image)
@@ -39,19 +40,56 @@ def scan_for_qr_code():
             content_type='text/plain'
         )
 	
-	if not retval:
-		return Response(
-			response="QR codes not detected.",
-			status=HTTPStatus.OK,
-			content_type='application/json'
-		)
-	else:
+	if retval:
 		return Response(
 			response=' '.join(decoded_info),
 			status=HTTPStatus.OK,
 			content_type='application/json'
 		)
-
+	
+	#если не нашли - обрежем пополам и снова поищем
+	height, width = image.shape[:2]
+	image = image[height // 2:, :]
+	try:
+		qcd = cv2.QRCodeDetector()
+		retval, decoded_info, points, straight_qrcode = qcd.detectAndDecodeMulti(image)
+	except Exception as e:
+		return Response(
+            response=f"Error detecting QR codes: {str(e)}",
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+            content_type='text/plain'
+        )
+	if retval:
+		return Response(
+			response=' '.join(decoded_info),
+			status=HTTPStatus.OK,
+			content_type='application/json'
+		)
+	
+	#и снова пополам
+	image = image[:, width // 2:]
+	try:
+		qcd = cv2.QRCodeDetector()
+		retval, decoded_info, points, straight_qrcode = qcd.detectAndDecodeMulti(image)
+	except Exception as e:
+		return Response(
+            response=f"Error detecting QR codes: {str(e)}",
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+            content_type='text/plain'
+        )
+	if retval:
+		return Response(
+			response=' '.join(decoded_info),
+			status=HTTPStatus.OK,
+			content_type='application/json'
+		)
+	
+	return Response(
+		response="QR codes not detected.",
+		status=HTTPStatus.OK,
+		content_type='application/json'
+	)
+		
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', port=8003)
