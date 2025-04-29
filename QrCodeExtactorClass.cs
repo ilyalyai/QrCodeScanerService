@@ -8,7 +8,7 @@
 /// <returns></returns>
 public static byte[] AddQrCode(string qrText, bool useRTCColors, string pathToFile = "",  int damageLevelCorrection = 0)
 {
-    byte[] blackColor = useRTCColors ? new byte[] { 184, 153, 91, 255 } : new byte[] { 255, 255, 255, 255 };
+    byte[] blackColor = useRTCColors ? new byte[] { 184, 153, 91, 255 } : new byte[] { 0, 0, 0, 255 };
     return AddQrCode(qrText, pathToFile, damageLevelCorrection, blackColor, new byte[] { 255, 255, 255, 255 });
 }
 
@@ -24,9 +24,9 @@ public static byte[] AddQrCode(string qrText, bool useRTCColors, string pathToFi
 public static byte[] AddQrCode(string qrText, string pathToFile = "", int damageLevelCorrection = 0, byte[] blackColor = null, byte[] whiteColor = null)
 {
     if (blackColor == null)
-        blackColor = new byte[] { 255, 255, 255, 255 };
+        blackColor = new byte[] { 0, 0, 0, 255 };
     if (whiteColor == null)
-        whiteColor = new byte[] { 0, 0, 0, 0 };
+        whiteColor = new byte[] { 255, 255, 255, 255 };
     //интересный факт - после тестов определил, что лучше всего коды определяются при коррекции = 1 или 2
     //На 3 видимо слишком получается мелкий код, а на 0 наоборот недостаточно инфы получается
     if (damageLevelCorrection < 0 || damageLevelCorrection > 3)
