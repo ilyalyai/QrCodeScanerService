@@ -28,6 +28,8 @@ def scan_for_qr_code():
 			status=HTTPStatus.BAD_REQUEST,
 			content_type='text/plain'
 		)
+	#переведем в прям очень черно-белую картинку
+	ret, image = cv2.threshold(image,127,255,cv2.THRESH_BINARY)
 	
 	#Сначала поищем код на всём изображении (мало ли оно повёрнуто или код фиг пойми где)
 	try:

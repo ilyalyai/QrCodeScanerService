@@ -2,23 +2,44 @@
 /// Генерация изображения из текста
 /// </summary>
 /// <param name="qrText">Текст внутри кода</param>
+/// <param name="useRTCColors">Использовать цвета логотипа РТК</param>
 /// <param name="pathToFile">Путь, по которому сохранить изображение. Сохраняем только если он предоставлен</param>
-/// <param name="damageLevelCorrection">Уровень коррекции ошибок (от 0 до 3)</param>
-/// <returns>QR код в виде байтовогом массива</returns>
-public static byte[] AddQrCode(string qrText, string pathToFile = "", int damageLevelCorrection = 0)
+/// <param name="damageLevelCorrection">Уровень коррекции ошибок (от 0 до 3). По умолчанию 2</param>
+/// <returns></returns>
+public static byte[] AddQrCode(string qrText, bool useRTCColors, string pathToFile = "",  int damageLevelCorrection = 0)
 {
+    byte[] blackColor = useRTCColors ? new byte[] { 184, 153, 91, 255 } : new byte[] { 255, 255, 255, 255 };
+    return AddQrCode(qrText, pathToFile, damageLevelCorrection, blackColor, new byte[] { 255, 255, 255, 255 });
+}
+
+/// <summary>
+/// Генерация изображения из текста
+/// </summary>
+/// <param name="qrText">Текст внутри кода</param>
+/// <param name="pathToFile">Путь, по которому сохранить изображение. Сохраняем только если он предоставлен</param>
+/// <param name="damageLevelCorrection">Уровень коррекции ошибок (от 0 до 3). По умолчанию 2</param>
+/// <param name="blackColor">Массив byte RGBA черного цвета кода. По умолчанию берется черный</param>
+/// <param name="whiteColor">Массив byte RGBA белого цвета кода. По умолчанию берется белый</param>
+/// <returns>QR код в виде байтовогом массива</returns>
+public static byte[] AddQrCode(string qrText, string pathToFile = "", int damageLevelCorrection = 0, byte[] blackColor = null, byte[] whiteColor = null)
+{
+    if (blackColor == null)
+        blackColor = new byte[] { 255, 255, 255, 255 };
+    if (whiteColor == null)
+        whiteColor = new byte[] { 0, 0, 0, 0 };
+    //интересный факт - после тестов определил, что лучше всего коды определяются при коррекции = 1 или 2
+    //На 3 видимо слишком получается мелкий код, а на 0 наоборот недостаточно инфы получается
     if (damageLevelCorrection < 0 || damageLevelCorrection > 3)
         damageLevelCorrection = 2;
     using (QRCodeGenerator qrGenerator = new QRCodeGenerator())
     using (QRCodeData qrCodeData = qrGenerator.CreateQrCode(qrText, (QRCodeGenerator.ECCLevel)damageLevelCorrection))
     using (PngByteQRCode qrCode = new PngByteQRCode(qrCodeData))
     {
-        byte[] qrCodeImage = qrCode.GetGraphic(10);
+        byte[] qrCodeImage = qrCode.GetGraphic(10, blackColor, whiteColor);
         if (!string.IsNullOrEmpty(pathToFile))
             File.WriteAllBytes(Path.Combine(pathToFile, "qrCode.png"), qrCodeImage);
         return qrCodeImage;
     }
-    return null;
 }
 
 public static string ExtractQrCode(string filePath, int pageNum)
@@ -34,19 +55,19 @@ private static class QrCodeExtactor
     private static readonly HttpClient _client = new();
 
     public static string GetTextFromDocument(string filePath, int pageNum)
-    {      
+    {
         byte[] imageBytes = null;
-        if(filePath.ToLower().EndsWith(".pdf"))
+        if (filePath.ToLower().EndsWith(".pdf"))
             imageBytes = ConvertToImage(filePath, pageNum);
         else
         {
             Image img = Image.FromFile(filePath);
-            if(img == null)
+            if (img == null)
                 return null;
             using (MemoryStream ms = new MemoryStream())
             {
                 img.Save(ms, img.RawFormat);
-                imageBytes =  ms.ToArray();
+                imageBytes = ms.ToArray();
             }
         }
         return GetTextFromQrCode(imageBytes);
@@ -102,10 +123,10 @@ private static class QrCodeExtactor
     private static string GetTextFromQrCode(byte[] image)
     {
         string url = Service.GetRegistryValue<string>(@"Server\QrCodeServiceApi\QrCodeServiceApiUrl", User.System, @"http://192.168.201.99:8003/scan_for_qr_code");
-        
+
         HttpRequestMessage message = new(HttpMethod.Post, url)
         {
-           Content = new ByteArrayContent(image)
+            Content = new ByteArrayContent(image)
         };
 
         HttpResponseMessage response = new(System.Net.HttpStatusCode.InternalServerError);
