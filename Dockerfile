@@ -9,6 +9,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-index --find-links=wheels -r requirements.txt && \
     rm -rf /app/wheels
 
+#это зависимости cv2. К сожалению туча библиотек использует обучную, не headless версию. Козлы
+RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
+
 COPY app.py /app/
 
 ENTRYPOINT ["python3"]
