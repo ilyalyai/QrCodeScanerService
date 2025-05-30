@@ -12,6 +12,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 #это зависимости cv2. К сожалению туча библиотек использует обучную, не headless версию. Козлы
 RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 
+#библиотеки для pyzbar
+RUN apt-get install libzbar0 -y
+
 COPY app.py /app/
 
 ENTRYPOINT ["python3"]
