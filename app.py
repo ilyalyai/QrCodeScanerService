@@ -78,13 +78,13 @@ def scan_for_qr_code():
 	#дадим шанс opencv
 	for imageToDecode in images:
 		# внутри уже есть проверка на пустую строку и None, так что проверим, что вернули хоть что-то
-		result = CheckImage(imageToDecode, qcd)
+		result = CheckImageOpenCV(imageToDecode, qcd)
 		if result is not None:
 			return result
 		
 	#opencv шанс не оправдал. QrCoder, твой выход
 	for imageToDecode in images:
-		result = CheckImage(imageToDecode, detector)
+		result = CheckImageQrCoder(imageToDecode, detector)
 		if result is not None:
 			return result
 	
@@ -94,7 +94,26 @@ def scan_for_qr_code():
 		content_type='application/json'
 	)
 
-def CheckImage(image, qcd):
+def CheckImageOpenCV(image, qcd):
+	try:
+		retval, decoded_info, _, _ = qcd.detectAndDecodeMulti(image)
+		if retval:
+			result = ''.join(decoded_info)
+			if result != "None" and result != "":
+				return Response(
+					response=result,
+					status=HTTPStatus.OK,
+					content_type='application/json'
+				)
+		return None
+	except Exception as e:
+		return Response(
+            response=f"Error detecting QR codes: {str(e)}",
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+            content_type='text/plain'
+        )
+
+def CheckImageQrCoder(image, qcd):
 	try:
 		decoded_text = qcd.detect_and_decode(image=image, is_bgr = True)
 		if decoded_text is not None:
