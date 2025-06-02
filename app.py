@@ -47,65 +47,46 @@ def scan_for_qr_code():
 			status=HTTPStatus.BAD_REQUEST,
 			content_type='text/plain'
 		)
-	# Initialize QReader
-	detector = QReader()
-	# Detect the QR bbox
-	cv2.imwrite("0.jpg", image)
-	result = CheckImage(image, detector)
-	if result is not None:
-		return result
+	#cv2.imwrite("0.jpg", image)
 
-	image = PreprocessImage(image)
-	cv2.imwrite("1.jpg", image)
-	result = CheckImage(image, detector)
-	if result is not None:
-		return result
+	#обработка всякими фильтрами
+	image1 = PreprocessImage(image)
 
 	#если не нашли - обрежем пополам и снова поищем
 	#решил проверят нефильтрованное изображение - фильтр код ломает
 	height, width = image.shape[:2]
-	croppedImage = image[height // 2:, :]
-	cv2.imwrite("2.jpg", croppedImage)
-	result = CheckImage(croppedImage, detector)
-	if result is not None:
-		return result
+	croppedImage0 = image[height // 2:, :]
+	croppedImage1 = croppedImage0[:, width // 2:]
 	
-	#и снова пополам
-	croppedImage = croppedImage[:, width // 2:]
-	cv2.imwrite("3.jpg", croppedImage)
-	result = CheckImage(croppedImage, detector)
-	if result is not None:
-		return result
+	#на 4 части
+	height, width = croppedImage1.shape[:2]
+	croppedImage2 = croppedImage1[height // 2:, :]
+	croppedImage3 = croppedImage2[:, width // 2:]
 	
-	height, width = croppedImage.shape[:2]
+	#на 8 частей
+	height, width = croppedImage3.shape[:2]
+	croppedImage4 = croppedImage3[height // 2:, :]
+	croppedImage5 = croppedImage4[:, width // 2:]
 	
-	croppedImage = croppedImage[height // 2:, :]
-	cv2.imwrite("4.jpg", croppedImage)
-	result = CheckImage(croppedImage, detector)
-	if result is not None:
-		return result
-	
-	#и снова пополам
-	croppedImage = croppedImage[:, width // 2:]
-	cv2.imwrite("5.jpg", croppedImage)
-	result = CheckImage(croppedImage, detector)
-	if result is not None:
-		return result
-	
-	height, width = croppedImage.shape[:2]
-	
-	croppedImage = croppedImage[height // 2:, :]
-	cv2.imwrite("6.jpg", croppedImage)
-	result = CheckImage(croppedImage, detector)
-	if result is not None:
-		return result
-	
-	#и снова пополам
-	croppedImage = croppedImage[:, width // 2:]
-	cv2.imwrite("3.jpg", croppedImage)
-	result = CheckImage(croppedImage, detector)
-	if result is not None:
-		return result
+	# Initialize QReader
+	detector = QReader()
+	#декодер OpenCV. Быстрее, но не видит почти ничего
+	qcd = cv2.QRCodeDetector()
+
+	images = [image, image1, croppedImage0, croppedImage1, croppedImage2, croppedImage3, croppedImage3, croppedImage4, croppedImage5]
+
+	#дадим шанс opencv
+	for imageToDecode in images:
+		# внутри уже есть проверка на пустую строку и None, так что проверим, что вернули хоть что-то
+		result = CheckImage(imageToDecode, qcd)
+		if result is not None:
+			return result
+		
+	#opencv шанс не оправдал. QrCoder, твой выход
+	for imageToDecode in images:
+		result = CheckImage(imageToDecode, detector)
+		if result is not None:
+			return result
 	
 	return Response(
 		response="QR codes not detected.",
